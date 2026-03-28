@@ -1103,8 +1103,7 @@ async function doLogin() {
   entries = loaded;
 }
 
-  } else {
-    const local = localStorage.getItem('vault_data');
+const local = localStorage.getItem('vault_data'); 
     if (local) {
       const dec = decrypt(local, pw);
       if (!dec) { document.getElementById('login-error').style.display = 'block'; return; }
