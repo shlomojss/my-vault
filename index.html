@@ -1067,6 +1067,7 @@ document.getElementById('master-input').addEventListener('keydown', e => {
 });
 
 async function doLogin() {
+ if (CONFIG.DROPBOX_TOKEN) dropboxToken = CONFIG.DROPBOX_TOKEN; 
   const pw = document.getElementById('master-input').value.trim();
   if (!pw) return;
   if (pw.length !== 10) {
