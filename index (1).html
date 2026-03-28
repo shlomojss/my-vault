@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>הכספת הפרטית שלי</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #0f0f13;
+  --surface: #18181f;
+  --surface2: #222230;
+  --surface3: #2a2a3a;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --accent: #7c6ef7;
+  --accent2: #5b50d6;
+  --accent-glow: rgba(124,110,247,0.18);
+  --text: #f0f0f5;
+  --text2: #9090a8;
+  --text3: #5a5a70;
+  --success: #4ade80;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --cc-color: #60a5fa;
+  --pw-color: #a78bfa;
+  --email-color: #34d399;
+  --personal-color: #fb923c;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  direction: rtl;
+  font-size: 15px;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 10px; }
+
+/* ─── SCREENS ─── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: flex; }
+
+/* ─── LOGIN ─── */
+#screen-login {
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+#screen-login::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(124,110,247,0.12) 0%, transparent 70%);
+  top: -150px; right: -150px;
+  pointer-events: none;
+}
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 24px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow);
+  position: relative;
+  z-index: 1;
+  animation: fadeUp 0.4s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.login-logo {
+  width: 60px; height: 60px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.5rem;
+  box-shadow: 0 0 30px var(--accent-glow);
+}
+
+.login-logo svg { width: 28px; height: 28px; }
+
+.login-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+.login-sub {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.input-wrap {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.input-wrap label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.input-wrap input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--text);
+  font-family: 'Heebo', sans-serif;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  direction: ltr;
+  text-align: right;
+}
+
+.input-wrap input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.btn-main {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  margin-top: 0.5rem;
+}
+
+.btn-main:hover { opacity: 0.9; }
+.btn-main:active { transform: scale(0.98); }
+
+.login-error {
+  text-align: center;
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 0.75rem;
+  display: none;
+}
+
+.dropbox-btn {
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-size: 14px;
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dropbox-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+
+.dropbox-status {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text2);
+  margin-top: 0.75rem;
+  padding: 8px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-connected { background: var(--success); box-shadow: 0 0 6px var(--success); }
+.dot-disconnected { background: var(--text3); }
+
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 1.25rem 0;
+  font-size: 12px; color: var(--text3);
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ─── MAIN APP ─── */
+#screen-main {
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 1.5rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+
+.topbar-brand {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.brand-icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.brand-icon svg { width: 15px; height: 15px; }
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+.btn-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Heebo', sans-serif;
+}
+.btn-icon:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+
+.btn-add-top {
+  height: 36px;
+  padding: 0 14px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: background 0.15s;
+}
+.btn-add-top:hover { background: var(--accent2); }
+
+.sync-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  display: flex; align-items: center; gap: 5px;
+}
+
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+
+/* ─── SIDEBAR + CONTENT ─── */
+.app-body {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  padding: 1.25rem 0;
+  position: sticky;
+  top: 60px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  padding: 0 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 14px;
+  color: var(--text2);
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-family: 'Heebo', sans-serif;
+  text-align: right;
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--accent-glow); color: var(--accent); font-weight: 600; }
+
+.nav-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+
+.nav-count {
+  margin-right: auto;
+  font-size: 11px;
+  background: var(--surface2);
+  padding: 1px 7px;
+  border-radius: 10px;
+  color: var(--text3);
+}
+.nav-item.active .nav-count { background: var(--accent-glow); color: var(--accent); }
+
+/* ─── MAIN CONTENT ─── */
+.main-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.content-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  max-width: 340px;
+}
+
+.search-box input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 36px 9px 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'Heebo', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-box input:focus { border-color: var(--accent); }
+.search-box input::placeholder { color: var(--text3); }
+
+.search-icon {
+  position: absolute;
+  right: 11px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3);
+  pointer-events: none;
+}
+
+.stats-row {
+  display: flex; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  flex: 1; min-width: 100px;
+}
+
+.stat-num { font-size: 22px; font-weight: 700; color: var(--text); }
+.stat-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+/* ─── CARDS ─── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.entry-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.entry-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 3px; height: 100%;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.entry-card.cat-cc::before { background: var(--cc-color); }
+.entry-card.cat-pw::before { background: var(--pw-color); }
+.entry-card.cat-email::before { background: var(--email-color); }
+.entry-card.cat-personal::before { background: var(--personal-color); }
+
+.entry-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 0.75rem; }
+
+.card-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+}
+
+.icon-cc { background: rgba(96,165,250,0.12); }
+.icon-pw { background: rgba(167,139,250,0.12); }
+.icon-email { background: rgba(52,211,153,0.12); }
+.icon-personal { background: rgba(251,146,60,0.12); }
+
+.card-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+.card-fields { border-top: 1px solid var(--border); padding-top: 0.75rem; }
+
+.card-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.field-key { color: var(--text3); }
+.field-val {
+  color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+  font-weight: 500;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eye-btn {
+  background: none; border: none;
+  cursor: pointer;
+  color: var(--text3);
+  font-size: 11px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  font-family: 'Heebo', sans-serif;
+}
+.eye-btn:hover { color: var(--accent); }
+
+.masked { letter-spacing: 3px; font-size: 10px; }
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: var(--text3);
+}
+.empty-icon { font-size: 42px; margin-bottom: 1rem; opacity: 0.4; }
+.empty-title { font-size: 16px; font-weight: 500; color: var(--text2); margin-bottom: 0.5rem; }
+.empty-sub { font-size: 13px; }
+
+/* ─── MODAL ─── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+.overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: fadeUp 0.25s ease;
+  box-shadow: var(--shadow);
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: var(--text);
+}
+
+.form-group { margin-bottom: 1rem; }
+.form-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 5px;
+  letter-spacing: 0.3px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 13px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'Heebo', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+  direction: rtl;
+}
+
+.form-group input:focus,
+.form-group select:focus { border-color: var(--accent); }
+.form-group input[type=password] { direction: ltr; text-align: right; }
+
+.form-group select option { background: var(--surface2); }
+
+.modal-actions {
+  display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem;
+}
+
+.btn-cancel {
+  padding: 9px 18px;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text2);
+  font-size: 13px;
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-cancel:hover { background: var(--surface2); color: var(--text); }
+
+.btn-save {
+  padding: 9px 20px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-save:hover { background: var(--accent2); }
+
+.btn-delete {
+  padding: 9px 16px;
+  background: transparent;
+  border: 1px solid rgba(248,113,113,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 13px;
+  font-family: 'Heebo', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: auto;
+}
+.btn-delete:hover { background: rgba(248,113,113,0.1); }
+
+/* ─── DETAIL MODAL ─── */
+.detail-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 1.5rem;
+}
+
+.detail-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.detail-title { font-size: 18px; font-weight: 700; color: var(--text); }
+.detail-cat { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.detail-row:last-of-type { border-bottom: none; }
+.detail-key { color: var(--text2); font-size: 12px; }
+.detail-value {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 500; color: var(--text);
+  max-width: 240px; overflow: hidden;
+}
+
+.copy-btn {
+  padding: 3px 9px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text3);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'Heebo', sans-serif;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+.copy-btn.copied { color: var(--success); border-color: var(--success); }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 13px;
+  color: var(--text);
+  z-index: 200;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+/* ─── SETUP BANNER ─── */
+.setup-banner {
+  background: rgba(124,110,247,0.1);
+  border: 1px solid rgba(124,110,247,0.25);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 1.25rem;
+  display: flex; align-items: flex-start; gap: 10px;
+  line-height: 1.6;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 640px) {
+  .sidebar { display: none; }
+  .topbar { padding: 0 1rem; }
+  .main-content { padding: 1rem; }
+  .cards-grid { grid-template-columns: 1fr; }
+  .stats-row { display: none; }
+  .modal { padding: 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ LOGIN SCREEN ═══════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <div class="login-title">הכספת הפרטית שלי</div>
+    <div class="login-sub">כל המידע הרגיש שלך — מוצפן, בטוח, תמיד זמין</div>
+
+    <div class="dropbox-status" id="dropbox-status">
+      <span class="status-dot dot-disconnected" id="status-dot"></span>
+      <span id="status-text">לא מחובר ל-Dropbox</span>
+    </div>
+
+    <div class="divider">חיבור Dropbox</div>
+
+    <button class="dropbox-btn" onclick="connectDropbox()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+      התחבר ל-Dropbox
+    </button>
+
+    <div class="divider">כניסה</div>
+
+    <div class="input-wrap">
+      <label>סיסמת מאסטר</label>
+      <input type="password" id="master-input" placeholder="הזן את הסיסמה שלך..." autocomplete="current-password"/>
+    </div>
+
+    <button class="btn-main" onclick="doLogin()">כניסה לכספת</button>
+    <div class="login-error" id="login-error">❌ סיסמה שגויה. נסה שוב.</div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN SCREEN ═══════════ -->
+<div id="screen-main" class="screen">
+
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      </div>
+      <span class="brand-name">הכספת הפרטית שלי</span>
+    </div>
+    <div class="topbar-actions">
+      <div class="sync-badge" id="sync-badge">
+        <span class="sync-dot"></span>
+        <span id="sync-text">מסונכרן</span>
+      </div>
+      <button class="btn-add-top" onclick="openAddModal()">
+        <span style="font-size:17px;line-height:1">+</span> הוסף רשומה
+      </button>
+      <button class="btn-icon" title="יציאה" onclick="doLogout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="app-body">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">קטגוריות</div>
+        <button class="nav-item active" data-cat="all" onclick="setCategory(this)">
+          <span style="font-size:15px">🗂️</span> הכל
+          <span class="nav-count" id="cnt-all">0</span>
+        </button>
+        <button class="nav-item" data-cat="cc" onclick="setCategory(this)">
+          <span class="nav-dot" style="background:var(--cc-color)"></span> כרטיסי אשראי / בנק
+          <span class="nav-count" id="cnt-cc">0</span>
+        </button>
+        <button class="nav-item" data-cat="pw" onclick="setCategory(this)">
+          <span class="nav-dot" style="background:var(--pw-color)"></span> סיסמאות ואתרים
+          <span class="nav-count" id="cnt-pw">0</span>
+        </button>
+        <button class="nav-item" data-cat="email" onclick="setCategory(this)">
+          <span class="nav-dot" style="background:var(--email-color)"></span> דוא"ל וחשבונות
+          <span class="nav-count" id="cnt-email">0</span>
+        </button>
+        <button class="nav-item" data-cat="personal" onclick="setCategory(this)">
+          <span class="nav-dot" style="background:var(--personal-color)"></span> מידע אישי
+          <span class="nav-count" id="cnt-personal">0</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main class="main-content">
+
+      <div class="setup-banner" id="setup-banner" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>כרגע עובד במצב הדגמה מקומי. <strong>לחיבור Dropbox</strong> — ראה את הוראות ההגדרה בתחתית הקובץ README.md.</span>
+      </div>
+
+      <div class="content-header">
+        <div class="search-box">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="חיפוש ברשומות..." id="search-input" oninput="renderCards()"/>
+        </div>
+      </div>
+
+      <div class="stats-row" id="stats-row"></div>
+
+      <div class="cards-grid" id="cards-container"></div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════ ADD/EDIT MODAL ═══════════ -->
+<div class="overlay" id="add-overlay">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">הוסף רשומה חדשה</div>
+    <div class="form-group">
+      <label>קטגוריה</label>
+      <select id="f-cat" onchange="renderFormFields()">
+        <option value="cc">💳 כרטיס אשראי / בנק</option>
+        <option value="pw">🔑 סיסמה ואתר</option>
+        <option value="email">✉️ דוא"ל וחשבון</option>
+        <option value="personal">👤 מידע אישי</option>
+      </select>
+    </div>
+    <div id="dynamic-fields"></div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="delete-btn" onclick="deleteEntry()" style="display:none">מחיקה</button>
+      <button class="btn-cancel" onclick="closeAddModal()">ביטול</button>
+      <button class="btn-save" onclick="saveEntry()">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ DETAIL MODAL ═══════════ -->
+<div class="overlay" id="detail-overlay">
+  <div class="modal">
+    <div class="detail-header">
+      <div class="detail-icon" id="d-icon"></div>
+      <div>
+        <div class="detail-title" id="d-name"></div>
+        <div class="detail-cat" id="d-cat"></div>
+      </div>
+    </div>
+    <div id="d-rows"></div>
+    <div class="modal-actions" style="margin-top:1.25rem">
+      <button class="btn-delete" onclick="editFromDetail()">עריכה</button>
+      <button class="btn-cancel" onclick="closeDetail()">סגור</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TOAST ═══════════ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────
+// CONFIGURATION — עדכן את הפרטים האלה
+// ─────────────────────────────────────────
+const CONFIG = {
+  DROPBOX_APP_KEY: '2k2xn7mjgfyqat0',   // ← מפתח האפליקציה מ-Dropbox
+  DROPBOX_FILE: '/secure-vault/vault.enc',    // ← נתיב הקובץ ב-Dropbox
+  MASTER_HASH_KEY: 'vault_master_v1',         // ← מפתח לאימות הסיסמה
+  DEMO_MODE: false                              // ← false אחרי חיבור Dropbox
+};
+
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let masterPassword = '';
+let entries = [];
+let currentCat = 'all';
+let editingIdx = null;
+let currentDetailIdx = null;
+let dropboxToken = null;
+const revealed = {};
+
+// Demo data
+const DEMO_ENTRIES = [
+  { cat:'cc', name:'ויזה כאל', number:'4111111111111234', holder:'ישראל ישראלי', expiry:'12/27', cvv:'321', pin:'1234', notes:'' },
+  { cat:'pw', name:'Gmail', url:'gmail.com', username:'israel@gmail.com', password:'MyP@ss2024!', notes:'' },
+  { cat:'email', name:'חשבון עבודה', email:'israel@company.co.il', password:'Work@2024', recovery:'personal@gmail.com', notes:'' },
+  { cat:'personal', name:'פרטים אישיים', idnum:'123456789', phone:'050-1234567', address:'רחוב הרצל 1, תל אביב', notes:'דרכון בתוקף עד 2029' }
+];
+
+// ─────────────────────────────────────────
+// CATEGORY META & FIELD DEFINITIONS
+// ─────────────────────────────────────────
+const CAT = {
+  cc:       { label:'כרטיס אשראי / בנק', icon:'💳', iconClass:'icon-cc', color:'var(--cc-color)' },
+  pw:       { label:'סיסמה ואתר',         icon:'🔑', iconClass:'icon-pw', color:'var(--pw-color)' },
+  email:    { label:'דוא"ל וחשבון',       icon:'✉️', iconClass:'icon-email', color:'var(--email-color)' },
+  personal: { label:'מידע אישי',           icon:'👤', iconClass:'icon-personal', color:'var(--personal-color)' }
+};
+
+const FIELDS = {
+  cc: [
+    { key:'name',   label:'שם / תיאור',         type:'text',     secret:false },
+    { key:'number', label:'מספר כרטיס / חשבון', type:'text',     secret:true  },
+    { key:'holder', label:'שם בעל הכרטיס',       type:'text',     secret:false },
+    { key:'expiry', label:'תוקף (MM/YY)',         type:'text',     secret:false },
+    { key:'cvv',    label:'CVV',                  type:'password', secret:true  },
+    { key:'pin',    label:'קוד סודי / PIN',       type:'password', secret:true  },
+    { key:'notes',  label:'הערות',                type:'text',     secret:false }
+  ],
+  pw: [
+    { key:'name',     label:'שם שירות / אתר', type:'text',     secret:false },
+    { key:'url',      label:'כתובת URL',       type:'text',     secret:false },
+    { key:'username', label:'שם משתמש',        type:'text',     secret:false },
+    { key:'password', label:'סיסמה',           type:'password', secret:true  },
+    { key:'notes',    label:'הערות',           type:'text',     secret:false }
+  ],
+  email: [
+    { key:'name',     label:'שם חשבון / תיאור', type:'text',     secret:false },
+    { key:'email',    label:'כתובת דוא"ל',       type:'text',     secret:false },
+    { key:'password', label:'סיסמה',             type:'password', secret:true  },
+    { key:'recovery', label:'אימייל שחזור',       type:'text',     secret:false },
+    { key:'notes',    label:'הערות',             type:'text',     secret:false }
+  ],
+  personal: [
+    { key:'name',    label:'כותרת',              type:'text', secret:false },
+    { key:'idnum',   label:'מספר תעודת זהות',    type:'text', secret:true  },
+    { key:'phone',   label:'טלפון',              type:'text', secret:false },
+    { key:'address', label:'כתובת',              type:'text', secret:false },
+    { key:'notes',   label:'מידע נוסף',          type:'text', secret:false }
+  ]
+};
+
+// ─────────────────────────────────────────
+// CRYPTO — AES-256 via CryptoJS
+// ─────────────────────────────────────────
+function encrypt(data, password) {
+  return CryptoJS.AES.encrypt(JSON.stringify(data), password).toString();
+}
+
+function decrypt(ciphertext, password) {
+  try {
+    const bytes = CryptoJS.AES.decrypt(ciphertext, password);
+    return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+  } catch(e) { return null; }
+}
+
+function hashPassword(pw) {
+  return CryptoJS.SHA256(pw + CONFIG.MASTER_HASH_KEY).toString();
+}
+
+// ─────────────────────────────────────────
+// DROPBOX INTEGRATION
+// ─────────────────────────────────────────
+function connectDropbox() {
+  if (CONFIG.DEMO_MODE) {
+    showToast('📦 במצב הדגמה — ראה README.md להגדרת Dropbox');
+    return;
+  }
+  const redirectUri = window.location.href.split('?')[0];
+  const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${CONFIG.DROPBOX_APP_KEY}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}`;
+  window.location.href = authUrl;
+}
+
+function checkDropboxToken() {
+  const hash = window.location.hash;
+  if (hash.includes('access_token')) {
+    const params = new URLSearchParams(hash.substring(1));
+    dropboxToken = params.get('access_token');
+    history.replaceState(null, null, window.location.pathname);
+  }
+  const stored = sessionStorage.getItem('dbx_token');
+  if (stored) dropboxToken = stored;
+  if (dropboxToken) {
+    sessionStorage.setItem('dbx_token', dropboxToken);
+    document.getElementById('status-dot').className = 'status-dot dot-connected';
+    document.getElementById('status-text').textContent = 'מחובר ל-Dropbox';
+  }
+}
+
+async function loadFromDropbox(password) {
+  if (!dropboxToken) return null;
+  try {
+    const res = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${dropboxToken}`,
+        'Dropbox-API-Arg': JSON.stringify({ path: CONFIG.DROPBOX_FILE })
+      }
+    });
+    if (res.status === 409) return [];
+    const enc = await res.text();
+    return decrypt(enc, password) || null;
+  } catch(e) { return null; }
+}
+
+async function saveToDropbox(data, password) {
+  if (!dropboxToken) return;
+  const enc = encrypt(data, password);
+  try {
+    await fetch('https://content.dropboxapi.com/2/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${dropboxToken}`,
+        'Dropbox-API-Arg': JSON.stringify({
+          path: CONFIG.DROPBOX_FILE,
+          mode: 'overwrite',
+          autorename: false,
+          mute: true
+        }),
+        'Content-Type': 'application/octet-stream'
+      },
+      body: enc
+    });
+    updateSyncStatus('מסונכרן עם Dropbox');
+  } catch(e) {
+    updateSyncStatus('שגיאת סנכרון');
+  }
+}
+
+function updateSyncStatus(msg) {
+  document.getElementById('sync-text').textContent = msg;
+}
+
+// ─────────────────────────────────────────
+// LOGIN
+// ─────────────────────────────────────────
+document.getElementById('master-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+  const pw = document.getElementById('master-input').value.trim();
+  if (!pw) return;
+  if (pw.length !== 10) {
+    document.getElementById('login-error').textContent = '❌ קוד הכניסה חייב להכיל בדיוק 10 תווים';
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+
+  // Demo mode
+  if (CONFIG.DEMO_MODE) {
+    if (pw.length !== 10) {
+      document.getElementById('login-error').textContent = '❌ קוד הכניסה חייב להכיל בדיוק 10 תווים';
+      document.getElementById('login-error').style.display = 'block';
+      return;
+    }
+    masterPassword = pw;
+    entries = JSON.parse(JSON.stringify(DEMO_ENTRIES));
+    showMain();
+    document.getElementById('setup-banner').style.display = 'flex';
+    return;
+  }
+
+  // Real mode: check stored hash
+  const storedHash = localStorage.getItem('vault_pw_hash');
+  if (storedHash) {
+    if (hashPassword(pw) !== storedHash) {
+      document.getElementById('login-error').style.display = 'block';
+      return;
+    }
+  } else {
+    localStorage.setItem('vault_pw_hash', hashPassword(pw));
+  }
+
+  masterPassword = pw;
+
+  // Load from Dropbox
+  if (dropboxToken) {
+    updateSyncStatus('טוען מ-Dropbox...');
+    const loaded = await loadFromDropbox(pw);
+    if (loaded === null) {
+      document.getElementById('login-error').textContent = '❌ שגיאה בפענוח — בדוק את הסיסמה';
+      document.getElementById('login-error').style.display = 'block';
+      return;
+    }
+    entries = loaded;
+  } else {
+    const local = localStorage.getItem('vault_data');
+    if (local) {
+      const dec = decrypt(local, pw);
+      if (!dec) { document.getElementById('login-error').style.display = 'block'; return; }
+      entries = dec;
+    } else {
+      entries = [];
+    }
+  }
+
+  showMain();
+}
+
+function showMain() {
+  document.getElementById('screen-login').classList.remove('active');
+  document.getElementById('screen-main').classList.add('active');
+  document.getElementById('login-error').style.display = 'none';
+  renderAll();
+}
+
+function doLogout() {
+  masterPassword = '';
+  entries = [];
+  currentCat = 'all';
+  document.getElementById('master-input').value = '';
+  document.getElementById('screen-main').classList.remove('active');
+  document.getElementById('screen-login').classList.add('active');
+  sessionStorage.removeItem('dbx_token');
+  dropboxToken = null;
+  document.getElementById('status-dot').className = 'status-dot dot-disconnected';
+  document.getElementById('status-text').textContent = 'לא מחובר ל-Dropbox';
+}
+
+// ─────────────────────────────────────────
+// SAVE DATA
+// ─────────────────────────────────────────
+async function persistData() {
+  if (CONFIG.DEMO_MODE) return;
+  if (dropboxToken) {
+    await saveToDropbox(entries, masterPassword);
+  } else {
+    localStorage.setItem('vault_data', encrypt(entries, masterPassword));
+    updateSyncStatus('נשמר מקומית');
+  }
+}
+
+// ─────────────────────────────────────────
+// RENDER
+// ─────────────────────────────────────────
+function renderAll() {
+  renderStats();
+  renderCards();
+  updateCounts();
+}
+
+function renderStats() {
+  const row = document.getElementById('stats-row');
+  const total = entries.length;
+  const byCat = {};
+  entries.forEach(e => { byCat[e.cat] = (byCat[e.cat]||0)+1; });
+  row.innerHTML = [
+    { n: total, l: 'סה"כ רשומות' },
+    { n: byCat.cc||0, l: 'כרטיסי אשראי' },
+    { n: byCat.pw||0, l: 'סיסמאות' },
+    { n: byCat.email||0, l: 'דוא"ל' }
+  ].map(s => `<div class="stat-card"><div class="stat-num">${s.n}</div><div class="stat-lbl">${s.l}</div></div>`).join('');
+}
+
+function updateCounts() {
+  const byCat = {};
+  entries.forEach(e => { byCat[e.cat] = (byCat[e.cat]||0)+1; });
+  document.getElementById('cnt-all').textContent = entries.length;
+  ['cc','pw','email','personal'].forEach(c => {
+    document.getElementById('cnt-'+c).textContent = byCat[c]||0;
+  });
+}
+
+function setCategory(el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  currentCat = el.dataset.cat;
+  renderCards();
+}
+
+function mask(val) {
+  if (!val) return '';
+  return '•'.repeat(Math.min(val.length, 10));
+}
+
+function renderCards() {
+  const q = (document.getElementById('search-input').value||'').toLowerCase();
+  const filtered = entries.filter(e => {
+    if (currentCat !== 'all' && e.cat !== currentCat) return false;
+    if (q) return JSON.stringify(e).toLowerCase().includes(q);
+    return true;
+  });
+
+  const container = document.getElementById('cards-container');
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔐</div>
+      <div class="empty-title">${q ? 'לא נמצאו תוצאות' : 'אין רשומות עדיין'}</div>
+      <div class="empty-sub">${q ? 'נסה מילת חיפוש אחרת' : 'לחץ על "הוסף רשומה" כדי להתחיל'}</div>
+    </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(e => {
+    const idx = entries.indexOf(e);
+    const meta = CAT[e.cat];
+    const fields = FIELDS[e.cat];
+    const preview = fields.filter(f => f.key !== 'name' && f.key !== 'notes' && e[f.key]).slice(0,2);
+
+    const fieldsHtml = preview.map(f => {
+      const val = e[f.key]||'';
+      const rid = `c${idx}-${f.key}`;
+      const shown = revealed[rid];
+      return `<div class="card-field">
+        <span class="field-key">${f.label}</span>
+        <span class="field-val">
+          <span id="${rid}" class="${f.secret&&!shown?'masked':''}">${f.secret&&!shown?mask(val):val}</span>
+          ${f.secret?`<button class="eye-btn" onclick="event.stopPropagation();toggleRev('${rid}','${val.replace(/'/g,"&#39;")}')">${shown?'הסתר':'הצג'}</button>`:''}
+        </span>
+      </div>`;
+    }).join('');
+
+    return `<div class="entry-card cat-${e.cat}" onclick="openDetail(${idx})">
+      <div class="card-head">
+        <div class="card-icon ${meta.iconClass}">${meta.icon}</div>
+        <div>
+          <div class="card-title">${e.name||'(ללא שם)'}</div>
+          <div class="card-sub">${meta.label}</div>
+        </div>
+      </div>
+      ${preview.length ? `<div class="card-fields">${fieldsHtml}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleRev(rid, val) {
+  revealed[rid] = !revealed[rid];
+  const el = document.getElementById(rid);
+  const btn = el.nextElementSibling;
+  if (revealed[rid]) {
+    el.textContent = val; el.classList.remove('masked');
+    if(btn) btn.textContent = 'הסתר';
+  } else {
+    el.textContent = mask(val); el.classList.add('masked');
+    if(btn) btn.textContent = 'הצג';
+  }
+}
+
+// ─────────────────────────────────────────
+// DETAIL
+// ─────────────────────────────────────────
+function openDetail(idx) {
+  currentDetailIdx = idx;
+  const e = entries[idx];
+  const meta = CAT[e.cat];
+  const fields = FIELDS[e.cat];
+
+  document.getElementById('d-icon').className = `detail-icon ${meta.iconClass}`;
+  document.getElementById('d-icon').textContent = meta.icon;
+  document.getElementById('d-name').textContent = e.name||'(ללא שם)';
+  document.getElementById('d-cat').textContent = meta.label;
+
+  const rows = fields.filter(f => f.key !== 'name' && e[f.key]).map(f => {
+    const val = e[f.key]||'';
+    const rid = `d-${f.key}`;
+    return `<div class="detail-row">
+      <span class="detail-key">${f.label}</span>
+      <span class="detail-value">
+        <span id="${rid}" class="${f.secret?'masked':''}">${f.secret?mask(val):val}</span>
+        ${f.secret?`<button class="eye-btn" onclick="toggleDet('${rid}','${val.replace(/'/g,"&#39;")}')">${'הצג'}</button>`:''}
+        <button class="copy-btn" id="copy-${rid}" onclick="copyVal('${val.replace(/'/g,"&#39;")}','copy-${rid}')">העתק</button>
+      </span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('d-rows').innerHTML = rows;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function toggleDet(rid, val) {
+  const el = document.getElementById(rid);
+  const btn = el.nextElementSibling;
+  if (el.classList.contains('masked')) {
+    el.textContent = val; el.classList.remove('masked'); if(btn)btn.textContent='הסתר';
+  } else {
+    el.textContent = mask(val); el.classList.add('masked'); if(btn)btn.textContent='הצג';
+  }
+}
+
+function copyVal(val, btnId) {
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById(btnId);
+    if (btn) { btn.textContent = '✓ הועתק'; btn.classList.add('copied'); }
+    setTimeout(() => { if(btn){btn.textContent='העתק';btn.classList.remove('copied');} }, 1500);
+  }).catch(()=> showToast('לא ניתן להעתיק'));
+}
+
+function closeDetail() { document.getElementById('detail-overlay').classList.remove('open'); }
+
+function editFromDetail() {
+  closeDetail();
+  openAddModal(currentDetailIdx);
+}
+
+// ─────────────────────────────────────────
+// ADD / EDIT MODAL
+// ─────────────────────────────────────────
+function openAddModal(idx) {
+  editingIdx = (typeof idx==='number') ? idx : null;
+  document.getElementById('modal-title').textContent = editingIdx!==null ? 'עריכת רשומה' : 'הוסף רשומה חדשה';
+  document.getElementById('delete-btn').style.display = editingIdx!==null ? 'block' : 'none';
+
+  const cat = editingIdx!==null ? entries[editingIdx].cat : 'cc';
+  document.getElementById('f-cat').value = cat;
+  renderFormFields();
+  document.getElementById('add-overlay').classList.add('open');
+}
+
+function renderFormFields() {
+  const cat = document.getElementById('f-cat').value;
+  const fields = FIELDS[cat];
+  const existing = editingIdx!==null ? entries[editingIdx] : {};
+  document.getElementById('dynamic-fields').innerHTML = fields.map(f => `
+    <div class="form-group">
+      <label>${f.label}</label>
+      <input type="${f.type}" id="ff-${f.key}" placeholder="${f.label}" value="${(existing[f.key]||'').replace(/"/g,'&quot;')}" autocomplete="off"/>
+    </div>
+  `).join('');
+}
+
+async function saveEntry() {
+  const cat = document.getElementById('f-cat').value;
+  const fields = FIELDS[cat];
+  const entry = { cat };
+  fields.forEach(f => { entry[f.key] = document.getElementById('ff-'+f.key)?.value||''; });
+
+  if (!entry.name) { showToast('נא להזין שם / תיאור'); return; }
+
+  if (editingIdx!==null) { entries[editingIdx] = entry; }
+  else { entries.push(entry); }
+
+  closeAddModal();
+  renderAll();
+  await persistData();
+  showToast(editingIdx!==null ? '✓ הרשומה עודכנה' : '✓ הרשומה נוספה');
+}
+
+async function deleteEntry() {
+  if (editingIdx===null) return;
+  entries.splice(editingIdx, 1);
+  closeAddModal();
+  renderAll();
+  await persistData();
+  showToast('🗑️ הרשומה נמחקה');
+}
+
+function closeAddModal() {
+  document.getElementById('add-overlay').classList.remove('open');
+  editingIdx = null;
+}
+
+// ─────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─────────────────────────────────────────
+// CLOSE ON OVERLAY CLICK
+// ─────────────────────────────────────────
+document.getElementById('add-overlay').addEventListener('click', e => { if(e.target===e.currentTarget)closeAddModal(); });
+document.getElementById('detail-overlay').addEventListener('click', e => { if(e.target===e.currentTarget)closeDetail(); });
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+checkDropboxToken();
+</script>
+
+<!--
+════════════════════════════════════════════════════════════
+  README — הוראות הגדרה לשימוש אמיתי
+════════════════════════════════════════════════════════════
+
+שלב 1: יצירת אפליקציית Dropbox
+  1. היכנס ל: https://www.dropbox.com/developers/apps
+  2. לחץ "Create App"
+  3. בחר: Scoped Access → Full Dropbox
+  4. תן לאפליקציה שם (למשל: "my-vault")
+  5. תחת "OAuth 2 → Redirect URIs" הוסף את כתובת ה-GitHub Pages שלך
+  6. העתק את ה-App Key
+
+שלב 2: עדכן בקובץ זה
+  שנה בראש הקובץ (ב-CONFIG):
+    DROPBOX_APP_KEY: 'הכנס כאן את ה-App Key שלך'
+    DEMO_MODE: false
+
+שלב 3: העלאה ל-GitHub Pages
+  1. צור repository חדש ב-GitHub (פרטי!)
+  2. העלה את קובץ index.html
+  3. הפעל GitHub Pages: Settings → Pages → Branch: main
+  4. הכתובת שתקבל — זו כתובת האפליקציה שלך
+
+שלב 4: שימוש ראשון
+  1. היכנס לאפליקציה
+  2. לחץ "התחבר ל-Dropbox" ואשר גישה
+  3. הגדר סיסמת מאסטר (שמור אותה היטב!)
+  4. התחל להוסיף רשומות — הכל נשמר ב-Dropbox מוצפן
+
+════════════════════════════════════════════════════════════
+  אבטחה
+════════════════════════════════════════════════════════════
+  ✓ הצפנת AES-256 (CryptoJS) — לפני שמירה ב-Dropbox
+  ✓ הפענוח קורה רק בדפדפן שלך
+  ✓ סיסמת המאסטר לא נשמרת בשום מקום
+  ✓ Dropbox רואה רק blob מוצפן — לא קריא
+  ✓ GitHub Pages מארח רק קוד — ללא מידע אישי
+
+════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
