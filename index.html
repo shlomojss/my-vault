@@ -1090,15 +1090,6 @@ async function doLogin() {
   }
 
   // Real mode: check stored hash
-  const storedHash = localStorage.getItem('vault_pw_hash');
-  if (storedHash) {
-    if (hashPassword(pw) !== storedHash) {
-      document.getElementById('login-error').style.display = 'block';
-      return;
-    }
-  } else {
-    localStorage.setItem('vault_pw_hash', hashPassword(pw));
-  }
 
   masterPassword = pw;
 
@@ -1106,12 +1097,12 @@ async function doLogin() {
   if (dropboxToken) {
     updateSyncStatus('טוען מ-Dropbox...');
     const loaded = await loadFromDropbox(pw);
-    if (loaded === null) {
-      document.getElementById('login-error').textContent = '❌ שגיאה בפענוח — בדוק את הסיסמה';
-      document.getElementById('login-error').style.display = 'block';
-      return;
-    }
-    entries = loaded;
+  if (loaded === null) {
+  entries = [];
+} else {
+  entries = loaded;
+}
+
   } else {
     const local = localStorage.getItem('vault_data');
     if (local) {
